@@ -1,52 +1,58 @@
-import lgpio as GPIO
+import lgpio
 import time
-
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
 
 # Define GPIO to use on Pi
 GPIO_TRIGGER = 23
 GPIO_ECHO    = 24
 
-# Set pins as output and input
-GPIO.setup(GPIO_TRIGGER, GPIO.OUT)  # Trigger
-GPIO.setup(GPIO_ECHO, GPIO.IN)      # Echo
+# Initialize the LGPIO library
+chip = lgpio.gpiochip_open(0)  # Open GPIO chip 0
 
-# Set trigger to False (Low)
-GPIO.output(GPIO_TRIGGER, False)
+# Set pins as output and input
+lgpio.gpionext(chip, GPIO_TRIGGER, lgpio.DIR_OUT)  # Trigger
+lgpio.gpionext(chip, GPIO_ECHO, lgpio.DIR_IN)      # Echo
+
 counter = 0
 
-while True:
-    print("Ultrasonic Measurement")
+try:
+    while True:
+        print("Ultrasonic Measurement")
 
-    # Allow module to settle
-    time.sleep(0.5)
+        # Allow module to settle
+        time.sleep(0.5)
 
-    # Send 10us pulse to trigger
-    GPIO.output(GPIO_TRIGGER, True)
-    time.sleep(0.00001)
-    GPIO.output(GPIO_TRIGGER, False)
+        # Set trigger to False (Low)
+        lgpio.gpiowrite(chip, GPIO_TRIGGER, 0)
+        time.sleep(0.5)  # Ensure trigger pin is low for at least 0.5ms
 
-    # Wait for the echo to start
-    while GPIO.input(GPIO_ECHO) == 0:
-        start = time.time()
+        # Send 10us pulse to trigger
+        lgpio.gpiowrite(chip, GPIO_TRIGGER, 1)
+        time.sleep(0.00001)
+        lgpio.gpiowrite(chip, GPIO_TRIGGER, 0)
 
-    # Wait for the echo to stop
-    while GPIO.input(GPIO_ECHO) == 1:
-        stop = time.time()
+        # Wait for the echo to start
+        while lgpio.gpio_read(chip, GPIO_ECHO) == 0:
+            start = time.time()
 
-    # Calculate pulse length
-    elapsed = stop - start
+        # Wait for the echo to stop
+        while lgpio.gpio_read(chip, GPIO_ECHO) == 1:
+            stop = time.time()
 
-    # Distance pulse travelled in that time is time
-    # multiplied by the speed of sound (cm/s)
-    distancet = elapsed * 34300
+        # Calculate pulse length
+        elapsed = stop - start
 
-    # That was the distance there and back so halve the value
-    distance = distancet / 2
+        # Distance pulse travelled in that time is time
+        # multiplied by the speed of sound (cm/s)
+        distancet = elapsed * 34300
 
-    print("Distance:", distance)
-    print("counter:", counter)
-    
-    counter += 1
-    time.sleep(1)  # Add a delay to make measurements easier to read
+        # That was the distance there and back so halve the value
+        distance = distancet / 2
+
+        print("Distance:", distance)
+        print("counter:", counter)
+        
+        counter += 1
+        time.sleep(1)  # Add a delay to make measurements easier to read
+
+finally:
+    lgpio.gpiochip_close(chip)  # Ensure GPIO chip is properly closed on exit
