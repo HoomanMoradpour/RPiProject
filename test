@@ -1,36 +1,66 @@
 import RPi.GPIO as GPIO
 import time
 
-GPIO.setmode(GPIO.BCM)
-delayTime = 0.2
-trigPin = 23
-echoPin = 24
+# Constants
+TRIG_PIN = 23
+ECHO_PIN = 24
+DELAY_TIME = 0.2  # Delay between measurements
+TIMEOUT = 0.1     # Timeout for echo response in seconds
+SPEED_OF_SOUND_CM_S = 34300  # Speed of sound in cm/s
 
-GPIO.setup(trigPin, GPIO.OUT)
-GPIO.setup(echoPin, GPIO.IN)
+# Setup GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(TRIG_PIN, GPIO.OUT)
+GPIO.setup(ECHO_PIN, GPIO.IN)
+
+def measure_distance():
+    # Ensure the trigger is low before sending a pulse
+    GPIO.output(TRIG_PIN, GPIO.LOW)
+    time.sleep(0.1)  # Wait for 100 ms to ensure trigger pin is low
+    
+    # Send pulse
+    GPIO.output(TRIG_PIN, GPIO.HIGH)
+    time.sleep(0.00001)  # Pulse width of 10 microseconds
+    GPIO.output(TRIG_PIN, GPIO.LOW)
+    
+    # Wait for echo start
+    start_time = time.time()
+    while GPIO.input(ECHO_PIN) == GPIO.LOW:
+        if time.time() - start_time > TIMEOUT:
+            return None  # Timeout
+    
+    # Record the start time of the pulse
+    pulse_start_time = time.time()
+
+    # Wait for echo end
+    while GPIO.input(ECHO_PIN) == GPIO.HIGH:
+        if time.time() - pulse_start_time > TIMEOUT:
+            return None  # Timeout
+
+    # Record the end time of the pulse
+    pulse_end_time = time.time()
+
+    # Calculate the duration of the pulse
+    pulse_duration = pulse_end_time - pulse_start_time
+
+    # Calculate distance
+    distance_cm = (pulse_duration * SPEED_OF_SOUND_CM_S) / 2  # Distance = (Time * Speed) / 2
+    distance_inch = distance_cm * 0.393701  # Convert cm to inches
+
+    return round(distance_inch, 1), round(distance_cm, 1)
 
 try:
     while True:
-        GPIO.output(trigPin, 0)
-        time.sleep(2E-6)
-        GPIO.output(trigPin, 1)
-        time.sleep(10E-6)
-        GPIO.output(trigPin, 0)
-        
-        while GPIO.input(echoPin) == 0:
-            pass
-        echoStartTime = time.time()
-        
-        while GPIO.input(echoPin) == 1:
-            pass
-        echoStopTime = time.time()
-        
-        pingTravelTime = echoStopTime - echoStartTime
-        dist_cm = (pingTravelTime * 34444) / 2
-        dist_inch = dist_cm * 0.3937008
-        print('distance =', round(dist_inch, 1), 'inches', round(dist_cm, 1), 'cm')
-        
-        time.sleep(delayTime)
+        distance = measure_distance()
+        if distance:
+            dist_inch, dist_cm = distance
+            print(f'Distance = {dist_inch} inches, {dist_cm} cm')
+        else:
+            print('Measurement timeout')
+        time.sleep(DELAY_TIME)
 
 except KeyboardInterrupt:
+    print("Measurement stopped by user")
+
+finally:
     GPIO.cleanup()
