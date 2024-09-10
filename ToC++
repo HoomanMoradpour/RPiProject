@@ -35,4 +35,78 @@ try:
 
 except KeyboardInterrupt:
     GPIO.cleanup()
-    
+
+########################################################################
+#include <iostream>
+#include <wiringPi.h>
+#include <unistd.h>
+#include <chrono>
+
+using namespace std;
+using namespace std::chrono;
+
+const int TRIG_PIN = 4;
+const int ECHO_PIN = 17;
+const double DELAY_TIME = 0.2; // seconds
+
+int main() {
+    wiringPiSetupGpio(); // Use BCM pin numbering
+
+    pinMode(TRIG_PIN, OUTPUT);
+    pinMode(ECHO_PIN, INPUT);
+
+    while (true) {
+        // Trigger pulse
+        digitalWrite(TRIG_PIN, LOW);
+        delayMicroseconds(2);
+        digitalWrite(TRIG_PIN, HIGH);
+        delayMicroseconds(10);
+        digitalWrite(TRIG_PIN, LOW);
+
+        // Wait for the echo to start
+        while (digitalRead(ECHO_PIN) == LOW);
+
+        auto startTime = high_resolution_clock::now();
+
+        // Wait for the echo to stop
+        while (digitalRead(ECHO_PIN) == HIGH);
+
+        auto stopTime = high_resolution_clock::now();
+
+        // Calculate pulse duration
+        duration<double> pingTravelTime = stopTime - startTime;
+        double pingTravelTimeSec = pingTravelTime.count();
+        
+        // Calculate distance
+        double distCm = (pingTravelTimeSec * 34444) / 2;
+        double distInch = distCm * 0.3937008;
+
+        cout << "Distance = " << round(distInch * 10) / 10 << " inches, "
+             << round(distCm * 10) / 10 << " cm" << endl;
+
+        // Wait before next measurement
+        sleep(DELAY_TIME);
+    }
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
