@@ -1,0 +1,58 @@
+import lgpio
+import time
+
+# Define GPIO to use on Pi
+GPIO_TRIGGER = 23
+GPIO_ECHO    = 24
+
+# Initialize the LGPIO library
+chip = lgpio.gpiochip_open(0)  # Open GPIO chip 0
+
+# Set pins as output and input
+lgpio.gpionext(chip, GPIO_TRIGGER, lgpio.DIR_OUT)  # Trigger
+lgpio.gpionext(chip, GPIO_ECHO, lgpio.DIR_IN)      # Echo
+
+counter = 0
+
+try:
+    while True:
+        print("Ultrasonic Measurement")
+
+        # Allow module to settle
+        time.sleep(0.5)
+
+        # Set trigger to False (Low)
+        lgpio.gpiowrite(chip, GPIO_TRIGGER, 0)
+        time.sleep(0.5)  # Ensure trigger pin is low for at least 0.5ms
+
+        # Send 10us pulse to trigger
+        lgpio.gpiowrite(chip, GPIO_TRIGGER, 1)
+        time.sleep(0.00001)
+        lgpio.gpiowrite(chip, GPIO_TRIGGER, 0)
+
+        # Wait for the echo to start
+        while lgpio.gpio_read(chip, GPIO_ECHO) == 0:
+            start = time.time()
+
+        # Wait for the echo to stop
+        while lgpio.gpio_read(chip, GPIO_ECHO) == 1:
+            stop = time.time()
+
+        # Calculate pulse length
+        elapsed = stop - start
+
+        # Distance pulse travelled in that time is time
+        # multiplied by the speed of sound (cm/s)
+        distancet = elapsed * 34300
+
+        # That was the distance there and back so halve the value
+        distance = distancet / 2
+
+        print("Distance:", distance)
+        print("counter:", counter)
+        
+        counter += 1
+        time.sleep(1)  # Add a delay to make measurements easier to read
+
+finally:
+    lgpio.gpiochip_close(chip)  # Ensure GPIO chip is properly closed on exit

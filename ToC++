@@ -1,0 +1,238 @@
+import RPi.GPIO as GPIO
+import time
+GPIO.setwarnings(False)
+
+GPIO.setmode(GPIO.BCM)
+delayTime = 0.2
+trigPin = 4
+echoPin = 17
+
+GPIO.setup(trigPin, GPIO.OUT)
+GPIO.setup(echoPin, GPIO.IN)
+
+try:
+    while True:
+        GPIO.output(trigPin, 0)
+        time.sleep(2E-6)
+        GPIO.output(trigPin, 1)
+        time.sleep(10E-6)
+        GPIO.output(trigPin, 0)
+        
+        while GPIO.input(echoPin) == 0:
+            pass
+        echoStartTime = time.time()
+        
+        while GPIO.input(echoPin) == 1:
+            pass
+        echoStopTime = time.time()
+        
+        pingTravelTime = echoStopTime - echoStartTime
+        dist_cm = (pingTravelTime * 34444) / 2
+        dist_inch = dist_cm * 0.3937008
+        print('distance =', round(dist_inch, 1), 'inches', round(dist_cm, 1), 'cm')
+        
+        time.sleep(delayTime)
+
+except KeyboardInterrupt:
+    GPIO.cleanup()
+
+########################################################################
+#include <iostream>
+#include <wiringPi.h>
+#include <unistd.h>
+#include <chrono>
+
+using namespace std;
+using namespace std::chrono;
+
+const int TRIG_PIN = 4;
+const int ECHO_PIN = 17;
+const double DELAY_TIME = 0.2; // seconds
+
+int main() {
+    wiringPiSetupGpio(); // Use BCM pin numbering
+
+    pinMode(TRIG_PIN, OUTPUT);
+    pinMode(ECHO_PIN, INPUT);
+
+    while (true) {
+        // Trigger pulse
+        digitalWrite(TRIG_PIN, LOW);
+        delayMicroseconds(2);
+        digitalWrite(TRIG_PIN, HIGH);
+        delayMicroseconds(10);
+        digitalWrite(TRIG_PIN, LOW);
+
+        // Wait for the echo to start
+        while (digitalRead(ECHO_PIN) == LOW);
+
+        auto startTime = high_resolution_clock::now();
+
+        // Wait for the echo to stop
+        while (digitalRead(ECHO_PIN) == HIGH);
+
+        auto stopTime = high_resolution_clock::now();
+
+        // Calculate pulse duration
+        duration<double> pingTravelTime = stopTime - startTime;
+        double pingTravelTimeSec = pingTravelTime.count();
+        
+        // Calculate distance
+        double distCm = (pingTravelTimeSec * 34444) / 2;
+        double distInch = distCm * 0.3937008;
+
+        cout << "Distance = " << round(distInch * 10) / 10 << " inches, "
+             << round(distCm * 10) / 10 << " cm" << endl;
+
+        // Wait before next measurement
+        sleep(DELAY_TIME);
+    }
+
+    return 0;
+}
+
+##############################################################
+#include <iostream>
+#include <wiringPi.h>
+#include <unistd.h>
+#include <chrono>
+#include <iomanip> // For setting precision
+
+using namespace std;
+using namespace std::chrono;
+
+const int TRIG_PIN = 4;
+const int ECHO_PIN = 17;
+const double DELAY_TIME = 0.2; // seconds
+
+int main() {
+    wiringPiSetupGpio(); // Use BCM pin numbering
+
+    pinMode(TRIG_PIN, OUTPUT);
+    pinMode(ECHO_PIN, INPUT);
+
+    while (true) {
+        // Trigger pulse
+        digitalWrite(TRIG_PIN, LOW);
+        delayMicroseconds(2);
+        digitalWrite(TRIG_PIN, HIGH);
+        delayMicroseconds(10);
+        digitalWrite(TRIG_PIN, LOW);
+
+        // Wait for the echo to start
+        while (digitalRead(ECHO_PIN) == LOW);
+
+        auto startTime = high_resolution_clock::now();
+
+        // Wait for the echo to stop
+        while (digitalRead(ECHO_PIN) == HIGH);
+
+        auto stopTime = high_resolution_clock::now();
+
+        // Calculate pulse duration
+        duration<double> pingTravelTime = stopTime - startTime;
+        double pingTravelTimeSec = pingTravelTime.count();
+        
+        // Calculate distance
+        double distCm = (pingTravelTimeSec * 34444) / 2;
+        double distInch = distCm * 0.3937008;
+
+        // Set precision for output
+        cout << fixed << setprecision(1);
+
+        cout << "Distance = " << distInch << " inches, "
+             << distCm << " cm" << endl;
+
+        // Wait before next measurement
+        sleep(static_cast<unsigned int>(DELAY_TIME));
+    }
+
+    return 0;
+}
+
+
+
+
+
+
+
+############################################################################
+
+#include <iostream>
+#include <wiringPi.h>
+#include <unistd.h> // For usleep()
+#include <chrono>
+#include <iomanip> // For setting precision
+
+using namespace std;
+using namespace std::chrono;
+
+const int TRIG_PIN = 4;
+const int ECHO_PIN = 17;
+const double DELAY_TIME = 0.2; // seconds
+
+int main() {
+    if (wiringPiSetupGpio() == -1) { // Check if wiringPi setup was successful
+        cerr << "wiringPi setup failed!" << endl;
+        return 1;
+    }
+
+    pinMode(TRIG_PIN, OUTPUT);
+    pinMode(ECHO_PIN, INPUT);
+
+    while (true) {
+        // Trigger pulse
+        digitalWrite(TRIG_PIN, LOW);
+        usleep(2); // 2 microseconds
+        digitalWrite(TRIG_PIN, HIGH);
+        usleep(10); // 10 microseconds
+        digitalWrite(TRIG_PIN, LOW);
+
+        // Wait for the echo to start
+        while (digitalRead(ECHO_PIN) == LOW);
+
+        auto startTime = high_resolution_clock::now();
+
+        // Wait for the echo to stop
+        while (digitalRead(ECHO_PIN) == HIGH);
+
+        auto stopTime = high_resolution_clock::now();
+
+        // Calculate pulse duration
+        duration<double> pingTravelTime = stopTime - startTime;
+        double pingTravelTimeSec = pingTravelTime.count();
+        
+        // Calculate distance
+        double distCm = (pingTravelTimeSec * 34444) / 2;
+        double distInch = distCm * 0.3937008;
+
+        // Set precision for output
+        cout << fixed << setprecision(1);
+
+        cout << "Distance = " << distInch << " inches, "
+             << distCm << " cm" << endl;
+
+        // Wait before next measurement
+        usleep(static_cast<useconds_t>(DELAY_TIME * 1000000)); // Convert seconds to microseconds
+    }
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -22,10 +22,12 @@ def get_distance():
 
     # Start recording the time when the wave is sent
     while GPIO.gpio_read(h, ECHO) == 0:
+        print ("Read 0")
         pulse_start = time.time()
 
     # Record time of arrival
     while GPIO.gpio_read(h, ECHO) == 1:
+        print ("Read 1")
         pulse_end = time.time()
 
     # Calculate the difference in times
