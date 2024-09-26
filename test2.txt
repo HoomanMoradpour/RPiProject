@@ -1,1 +1,25 @@
-This is the third test
+#include <wiringPi.h>
+#include <iostream>
+#include <unistd.h> // for sleep()
+
+int main() {
+    // Prevent warnings from GPIO
+    wiringPiSetupGpio(); // Use BCM pin numbering
+
+    // Set GPIO 18 as an output pin
+    pinMode(18, OUTPUT);
+
+    while (true) {
+        // Turn Relay Off (Set GPIO to HIGH)
+        digitalWrite(18, HIGH);
+        // Wait 1 second
+        sleep(1);
+        
+        // Turn Relay On (Set GPIO to LOW)
+        digitalWrite(18, LOW);
+        // Wait 1 second
+        sleep(1);
+    }
+
+    return 0;
+}
